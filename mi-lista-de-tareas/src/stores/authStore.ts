@@ -4,9 +4,9 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
+  onAuthStateChanged,
   User as FirebaseUser,
 } from "firebase/auth";
-import { useRouter } from "vue-router"; // 🔹 Importar useRouter dentro del store
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
@@ -14,8 +14,7 @@ export const useAuthStore = defineStore("auth", {
   }),
 
   actions: {
-    async register(email: string, password: string) {
-      const router = useRouter(); // 🔹 Obtener instancia del router
+    async register(email: string, password: string, router: any) {
       try {
         const userCredential = await createUserWithEmailAndPassword(
           auth,
@@ -23,14 +22,13 @@ export const useAuthStore = defineStore("auth", {
           password
         );
         this.user = userCredential.user;
-        router.push("/tareas"); // 🔹 Redirigir a tareas
+        router.push("/tareas");
       } catch (error) {
         console.error("Error al registrarse:", error);
       }
     },
 
-    async login(email: string, password: string) {
-      const router = useRouter(); // 🔹 Obtener instancia del router
+    async login(email: string, password: string, router: any) {
       try {
         const userCredential = await signInWithEmailAndPassword(
           auth,
@@ -38,21 +36,27 @@ export const useAuthStore = defineStore("auth", {
           password
         );
         this.user = userCredential.user;
-        router.push("/tareas"); // 🔹 Redirigir a tareas
+        router.push("/tareas");
       } catch (error) {
         console.error("Error al iniciar sesión:", error);
       }
     },
 
-    async logout() {
-      const router = useRouter(); // 🔹 Obtener instancia del router
+    async logout(router: any) {
       try {
         await signOut(auth);
         this.user = null;
-        router.push("/"); // 🔹 Redirigir al login
+        router.push("/");
       } catch (error) {
         console.error("Error al cerrar sesión:", error);
       }
+    },
+
+    // 🔹 Escuchar cambios en la autenticación
+    initAuth() {
+      onAuthStateChanged(auth, (user) => {
+        this.user = user;
+      });
     },
   },
 });

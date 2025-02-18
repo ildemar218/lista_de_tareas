@@ -1,11 +1,17 @@
 import { createApp } from "vue";
-import App from "./App.vue";
-import router from "./router"; // 🔹 Asegúrate de que el router está bien importado
 import { createPinia } from "pinia";
+import App from "./App.vue";
+import router from "./router";
+import { useAuthStore } from "./stores/authStore";
 
 const app = createApp(App);
+const pinia = createPinia();
 
-app.use(createPinia());
-app.use(router); // 🔹 Agregar el router
+app.use(pinia);
+app.use(router);
+
+// 🔹 Llamar a initAuth para mantener la sesión
+const authStore = useAuthStore();
+authStore.initAuth();
 
 app.mount("#app");
