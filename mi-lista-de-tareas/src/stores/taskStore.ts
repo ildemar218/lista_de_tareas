@@ -6,6 +6,7 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
 } from "firebase/firestore";
 import { db } from "../firebase"; // Asegúrate de que la ruta sea correcta
 
@@ -55,7 +56,7 @@ export const useTaskStore = defineStore("task", {
       }
     },
 
-    // Actualizar tarea
+    // Actualizar estado de completado de la tarea
     async updateTask(id: string, completado: boolean) {
       try {
         const taskRef = doc(db, "tareas", id);
@@ -78,6 +79,28 @@ export const useTaskStore = defineStore("task", {
         this.tasks = this.tasks.filter((task) => task.id !== id);
       } catch (error) {
         console.error("Error al eliminar tarea:", error);
+      }
+    },
+
+    // Actualizar título y descripción de la tarea
+    async updateTaskDetails(id: string, titulo: string, descripcion: string) {
+      try {
+        const taskRef = doc(db, "tareas", id);
+
+        // Verificar si la tarea existe antes de actualizar
+        const taskSnap = await getDoc(taskRef);
+        if (!taskSnap.exists()) {
+          console.error("❌ La tarea no existe en Firestore.");
+          return;
+        }
+
+        // Actualizar la tarea
+        await updateDoc(taskRef, { titulo, descripcion });
+
+        // Recargar las tareas para reflejar cambios en la UI
+        await this.fetchTasks();
+      } catch (error) {
+        console.error("Error al actualizar detalles de la tarea:", error);
       }
     },
   },

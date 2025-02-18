@@ -1,22 +1,42 @@
 <template>
-  <div>
+  <div class="container">
     <h1>Lista de Tareas</h1>
-    <button @click="logout">Cerrar Sesión</button>
+    <button @click="authStore.logout">Cerrar Sesión</button>
 
-    <ul>
-      <li v-for="task in taskStore.tasks" :key="task.id">
+    <ul class="task-list">
+      <li v-for="task in taskStore.tasks" :key="task.id" class="task-item">
         <input
           type="checkbox"
           :checked="task.completado"
           @change="() => toggleTaskCompletion(task)"
         />
-        {{ task.titulo }} - {{ task.descripcion }}
-        <button @click="() => deleteTask(task.id)">Eliminar</button>
+
+        <template v-if="editingTaskId === task.id">
+          <input v-model="editTask.titulo" type="text" class="input-field" />
+          <input
+            v-model="editTask.descripcion"
+            type="text"
+            class="input-field"
+          />
+          <button @click="saveTask(task.id)">Guardar</button>
+          <button @click="cancelEdit">Cancelar</button>
+        </template>
+
+        <template v-else>
+          <div class="task-content">
+            <span class="task-title">{{ task.titulo }}</span>
+            <span class="task-desc">{{ task.descripcion }}</span>
+          </div>
+          <div class="task-buttons">
+            <button @click="() => startEditing(task)">Editar</button>
+            <button @click="() => deleteTask(task.id)">Eliminar</button>
+          </div>
+        </template>
       </li>
     </ul>
 
     <h3>Agregar Nueva Tarea</h3>
-    <form @submit.prevent="createTask">
+    <form @submit.prevent="createTask" class="task-form">
       <input
         v-model="newTask.titulo"
         type="text"
@@ -38,7 +58,9 @@
 import { ref, onMounted } from "vue";
 import { useTaskStore } from "../stores/taskStore";
 import { useAuthStore } from "../stores/authStore";
-import { useRouter } from "vue-router"; // 🔹 Importar useRouter
+
+const authStore = useAuthStore();
+const taskStore = useTaskStore();
 
 interface Task {
   id: string;
@@ -47,11 +69,13 @@ interface Task {
   completado: boolean;
 }
 
-const authStore = useAuthStore();
-const taskStore = useTaskStore();
-const router = useRouter(); // 🔹 Obtener instancia del router
-
 const newTask = ref<Omit<Task, "id" | "completado">>({
+  titulo: "",
+  descripcion: "",
+});
+
+const editingTaskId = ref<string | null>(null);
+const editTask = ref<Omit<Task, "id" | "completado">>({
   titulo: "",
   descripcion: "",
 });
@@ -70,14 +94,26 @@ const deleteTask = (id: string) => {
   taskStore.deleteTask(id);
 };
 
-// 🔹 Modificar logout para incluir router
-const logout = async () => {
-  await authStore.logout();
-  router.push("/"); // 🔹 Redirigir al login después de cerrar sesión
+const startEditing = (task: Task) => {
+  editingTaskId.value = task.id;
+  editTask.value = { titulo: task.titulo, descripcion: task.descripcion };
+};
+
+const saveTask = async (id: string) => {
+  if (!editTask.value.titulo || !editTask.value.descripcion) return;
+  await taskStore.updateTaskDetails(
+    id,
+    editTask.value.titulo,
+    editTask.value.descripcion
+  );
+  editingTaskId.value = null;
+};
+
+const cancelEdit = () => {
+  editingTaskId.value = null;
 };
 
 onMounted(() => {
-  console.log("TaskList montado"); // 🔹 Verificar si se monta correctamente
   taskStore.fetchTasks();
 });
 </script>
